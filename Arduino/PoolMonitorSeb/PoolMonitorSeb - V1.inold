@@ -1,0 +1,271 @@
+/**************************************************/
+/***** LECTURE TEMPERATURE ET HUMIDITE DHT11   ****/
+#include <DHT.h>
+/**************************************************/
+/***** AFFICHAGE ECRAN OLED                   ****/
+#include "ssd1306.h"
+/****************************************/
+/***** LECTURE TEMPERATURE DS18B20   ****/
+#include <OneWire.h>
+#include <DallasTemperature.h>
+/****************************************/
+
+/*********************** DECLARATIONS DES BROCHES UTILISEES **************************/
+
+#define BROCHE_PH           A0
+#define BROCHE_ORP          A1
+#define BROCHE_NIVEAU       A2
+
+#define BROCHE_BUZZER       2
+#define BROCHE_TEMPERATURE  6
+#define BROCHE_DHT11        8
+
+/************************************************************************************/
+
+/*********************** CONSTANTES ************************************************/
+#define VREF 5.0  // Tension de référence des niveaux logiques sert pour le calcul du PH
+#define NOMBRE_POINTS_DE_MESURE  30 // sert pour le calcul du PH
+#define NOMBRE_CYCLES_INITIAUX_STABILISATION_MESURES 30
+/***********************************************************************************/
+
+/*********************** VARIABLES GLOBALES ****************************************/
+float temperatureEauEnCelcius;
+float calibrationPH = 0;
+float calibrationORP = -690;
+float PH;
+float ORP;
+int timingDerniereMAJDesDonnees;
+int PERIODE_ECHANTILLONAGE_S;
+int nombreCycle = 0;
+DHT dht(BROCHE_DHT11, DHT11);
+float temperatureDuLocalEnCelcius;
+float humiditeDuLocal;
+float niveauEau;
+/***********************************************************************************/
+
+/*************************************************
+
+              SETUP
+
+ * **********************************************/
+void setup(void)
+{
+
+  Serial.begin(9600); // USB
+  ssd1306_128x32_i2c_init();
+  ssd1306_fillScreen(0x00);
+  ssd1306_setFixedFont(ssd1306xled_font6x8);
+
+  if (PERIODE_ECHANTILLONAGE_S == 0)
+    PERIODE_ECHANTILLONAGE_S = 20; // par defaut 5mn
+
+  timingDerniereMAJDesDonnees = millis();
+}
+
+/*************************************************
+
+              LOOP
+
+ * **********************************************/
+void loop(void)
+{
+  int timingCourant = millis();
+  
+  // Les mesures sont transmises toutes les PERIODE_ECHANTILLONAGE_S
+  if ((timingCourant - timingDerniereMAJDesDonnees) > (PERIODE_ECHANTILLONAGE_S * 1000))
+  {
+    envoyerLesDonneesDansLeCloud(); 
+    envoyerInfosSurLiaisonSerie();
+    
+    timingDerniereMAJDesDonnees = millis();
+  }
+  
+  lireTemperatureEauDuBassin();
+  lireORP();
+  lirePH();
+  lireTemperatureEtHumiditeDuLocal();
+  lireNiveauEauDansLocal();
+  gererAlarmeNiveauEauDansLocal();
+  mettreAJourInfosSurAfficheur();
+}
+
+/*************************************************
+
+              LIRE LA TEMPERATURE DU BASSIN
+                        DS18B20
+ * **********************************************/
+void lireTemperatureEauDuBassin(void)
+{
+  OneWire oneWire(BROCHE_TEMPERATURE);
+  DallasTemperature capteurTemperature(&oneWire); //Utilistion du bus Onewire pour les capteurs
+  capteurTemperature.begin(); //Activation du capteur de temperature
+  //Lecture de la température
+  capteurTemperature.requestTemperatures();
+  temperatureEauEnCelcius = capteurTemperature.getTempCByIndex(0);
+}
+
+/*************************************************
+
+              LIRE LA TEMPERATURE ET HUMIDITE
+                        DHT 11
+ * **********************************************/
+void lireTemperatureEtHumiditeDuLocal(void)
+{
+  temperatureDuLocalEnCelcius = dht.readTemperature();
+  humiditeDuLocal = dht.readHumidity();
+}
+
+/*************************************************
+
+              LIRE LE PH
+
+ * **********************************************/
+void lirePH(void)
+{
+  // Lecture du PH selon la doc du capteur https://www.dfrobot.com/wiki/index.php/PH_meter_V1.1_SKU:SEN0161#Sample_Code
+  static float voltagePHMoyen;
+
+  static int analogBuffer[NOMBRE_POINTS_DE_MESURE];    // Stockage des points de mesure analogiques
+  static int analogBufferIndex = 0;
+
+  int valeur = analogRead(BROCHE_PH);
+  analogBuffer[analogBufferIndex++] = valeur;
+
+  if (analogBufferIndex == NOMBRE_POINTS_DE_MESURE) analogBufferIndex = 0;
+  voltagePHMoyen = filtreMedian(analogBuffer, NOMBRE_POINTS_DE_MESURE) * VREF / 1024; // récuparation d'une valeur stable en applicant l'algo de filtre median (https://fr.wikipedia.org/wiki/Filtre_m%C3%A9dian)
+
+  PH = 3.5 * voltagePHMoyen + calibrationPH;
+}
+
+/*************************************************
+
+              LIRE OXYREDUCTION
+
+ * **********************************************/
+void lireORP(void)
+{
+  // Lecture de l'ORP selon la doc du capteur https://www.phidgets.com/docs/1130_User_Guide
+  int voltageORP = analogRead(BROCHE_ORP) + calibrationORP;
+  ORP = (2.5 - voltageORP) / 1.037;
+}
+
+/*************************************************
+
+              LIRE NIVEAU EAU DANS LOCAL
+                      Moisture sensor
+ * **********************************************/
+void lireNiveauEauDansLocal()
+{
+  /*# valeurs du capteur
+  # 0  ~300     sec
+  # 300~700     humide
+  # 700~950     dans l'eau     */
+  
+  niveauEau = analogRead(BROCHE_NIVEAU);
+}
+
+/*************************************************
+
+              ALARME NIVEAU EAU DANS LOCAL
+                     
+ * **********************************************/
+void gererAlarmeNiveauEauDansLocal()
+{
+  if(niveauEau > 500) digitalWrite(BROCHE_BUZZER, HIGH);
+}
+
+/*************************************************
+
+              FILTRE MEDIAN
+
+ * **********************************************/
+int filtreMedian(int tableauDesPoints[], int nombreDePoints)
+{
+  int tableauTemporaire[nombreDePoints];
+  for (byte i = 0; i < nombreDePoints; i++)
+  {
+    tableauTemporaire[i] = tableauDesPoints[i];
+  }
+  int i, j, valeurMoyenne;
+  for (j = 0; j < nombreDePoints - 1; j++)
+  {
+    for (i = 0; i < nombreDePoints - j - 1; i++)
+    {
+      if (tableauTemporaire[i] > tableauTemporaire[i + 1])
+      {
+        valeurMoyenne = tableauTemporaire[i];
+        tableauTemporaire[i] = tableauTemporaire[i + 1];
+        tableauTemporaire[i + 1] = valeurMoyenne;
+      }
+    }
+  }
+  if ((nombreDePoints & 1) > 0)
+    valeurMoyenne = tableauTemporaire[(nombreDePoints - 1) / 2];
+  else
+    valeurMoyenne = (tableauTemporaire[nombreDePoints / 2] + tableauTemporaire[nombreDePoints / 2 - 1]) / 2;
+
+  return valeurMoyenne;
+}
+
+/*************************************************
+
+              ENVOI DES DONNEES DANS LE CLOUD
+
+ * **********************************************/
+void envoyerLesDonneesDansLeCloud() {
+
+}
+
+/*************************************************
+
+              MISE A JOUR INFOS AFFICHEUR
+
+ * **********************************************/
+void miseAJourAfficheur(String valeur, int x, int y)
+{
+  char stringBuff[16];
+  valeur.toCharArray(stringBuff, 16);
+  ssd1306_printFixed(x, y, stringBuff, STYLE_NORMAL);
+}
+
+/*************************************************
+
+              TRACER POUR DEBUG
+
+ * **********************************************/
+void tracerDebug(String message)
+{
+  Serial.println("DEBUG|" + String(millis()) + " - " + message);
+}
+
+/*************************************************
+
+              AFFICHAGE DES INFOS SUR AFFICHEUR
+
+ * **********************************************/
+void mettreAJourInfosSurAfficheur()
+{
+   miseAJourAfficheur("Eau : " + String(temperatureEauEnCelcius) + " *C", 0, 0);
+   miseAJourAfficheur(" " + String(PH) + " | " + String(ORP), 0, 8);
+   miseAJourAfficheur("Loc : " + String(temperatureDuLocalEnCelcius) + " *C", 0, 16);
+   miseAJourAfficheur("Loc : " + String(humiditeDuLocal) + " %", 0, 24);
+}
+
+/*************************************************
+
+              TRACER LIAISON SERIE
+
+ * **********************************************/
+void envoyerInfosSurLiaisonSerie()
+{
+  String messageDebug = "\r\n=============== INFOS BASSIN ==============\r\n";
+  messageDebug += "Temperature : " + String(temperatureEauEnCelcius) + "°C\r\n";
+  messageDebug += "PH          : " + String(PH) + "\r\n";
+  messageDebug += "ORP         : " + String(ORP) + " mV\r\n";
+  messageDebug += "=============== INFOS LOCAL  ==============\r\n";
+  messageDebug += "Temperature : " + String(temperatureDuLocalEnCelcius) + " °C\r\n";
+  messageDebug += "Humidite    : " + String(humiditeDuLocal) + " %\r\n";
+  messageDebug += "Niveau eau  : " + String(niveauEau) + "\r\n";
+
+  tracerDebug(messageDebug);
+}
