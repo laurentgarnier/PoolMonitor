@@ -1,4 +1,3 @@
-#include <Arduino.h>
 /***** AFFICHAGE ECRAN OLED          ****/
 #include "ssd1306.h"
 /****************************************/
@@ -7,6 +6,10 @@
 #include <DallasTemperature.h>
 /****************************************/
 #include <WiFi.h>
+
+#include <PHprobeManagement.h>
+#include <ORPprobeManagement.h>
+#include <WifiManagement.h>
 
 /****************************************/
 
@@ -24,7 +27,7 @@
 
 /*********************** CONSTANTES ************************************************/
 #define VREF 3.3  // Tension de référence des niveaux logiques
-#define NOMBRE_POINTS_DE_MESURE  10 // Nombre de mesures pour PH et ORP
+#define NOMBRE_POINTS_DE_MESURE  40 // Nombre de mesures pour PH et ORP
 #define NB_PAS_POUR_VREF 4096 // 4096 pour 3.3V pour les entrees analogiques 
 
 DeviceAddress capteurTemperatureExterieure = { 0x28, 0xFF, 0x8A, 0x5E, 0xC0, 0x17, 0x5, 0x1D };
@@ -36,7 +39,7 @@ float temperatureEauEnCelcius;
 float temperatureExterieureEnCelcius;
 
 float PH;
-float calibrationPH = 0.967;
+float calibrationPH = 0.0;
 float ORP;
 
 int timingDernierEnvoiDesDonnees;
@@ -69,7 +72,7 @@ void setup(void)
 	ssd1306_setFixedFont(ssd1306xled_font6x8);
 
 	initWifi(ssid, pass);
-  	enregistrerCapteur();
+  enregistrerCapteur();
 
 	timingDernierEnvoiDesDonnees = millis();
 }
@@ -192,58 +195,58 @@ void envoyerLesDonneesDansLeCloud() {
 
 /*************************************************
  *
- *            ENREGISTRE L IP AUPRES DU RASPBERRY
+ *            ENVOI DES DONNEES DANS LE CLOUD
  *
  * **********************************************/
 void enregistrerCapteur() {
 
-	tracerDebug(F("\nEnregistrement"));
-	if (!verifierStatutWifi()) return;
+  tracerDebug(F("\nEnregistrement"));
+  if (!verifierStatutWifi()) return;
 
-	tracerDebug(F("Connection serveur ..."));
-	if (!wifi.connect(serveur, 1880))
-	{
-		tracerDebug(F("Echec de la connection"));
-		return;
-	}
-	else
-	tracerDebug("Connection au serveur " + String(serveur) + " OK!");
+  tracerDebug(F("Connection serveur ..."));
+  if (!wifi.connect(serveur, 1880))
+  {
+    tracerDebug(F("Echec de la connection"));
+    return;
+  }
+  else
+    tracerDebug("Connection au serveur " + String(serveur) + " OK!");
 
-	String datas = "{\"sensorID\": \"Piscine\",\"IP\": \"" + WiFi.localIP().toString() + "\"}\n";
+  String datas = "{\"sensorID\": \"Piscine\",\"IP\": \"" + WiFi.localIP().toString() + "\"}\n";
 
-	String requete = F("POST /RegisterSensor");
-	requete.concat(F("\n"\
-	"Host: 192.168.10.200:1880\n"\
-	"Content-Type: application/json\n"\
-	"Content-Length: "));
-	requete.concat(datas.length());
-	requete.concat(F("\n\n"));
-	requete.concat(datas);
+  String requete = F("POST /RegisterSensor");
+  requete.concat(F("\n"\
+    "Host: 192.168.10.200:1880\n"\
+    "Content-Type: application/json\n"\
+    "Content-Length: "));
+  requete.concat(datas.length());
+  requete.concat(F("\n\n"));
+  requete.concat(datas);
 
-	tracerDebug("Envoi :\n" + requete);
-	wifi.println(requete);
+  tracerDebug("Envoi :\n" + requete);
+  wifi.println(requete);
 
-	while (wifi.connected())
-	{
-		String line = wifi.readStringUntil('\n');
-		if (line == "\r")
-		{
-			tracerDebug("\nheaders received");
-			break;
-		}
-	}
-	// Reponse du serveur
-	String reponse;
+  while (wifi.connected())
+  {
+    String line = wifi.readStringUntil('\n');
+    if (line == "\r")
+    {
+      tracerDebug("\nheaders received");
+      break;
+    }
+  }
+  // Reponse du serveur
+  String reponse;
 
-	while (wifi.available())
-	{
-		char c = wifi.read();
-		reponse.concat(c);
-	}
+  while (wifi.available())
+  {
+    char c = wifi.read();
+    reponse.concat(c);
+  }
 
-	tracerDebug(reponse);
-	tracerDebug("Enregistrement OK");
-	wifi.stop();
+  tracerDebug(reponse);
+  tracerDebug("Enregistrement OK");
+  wifi.stop();
 }
 
 /*************************************************
