@@ -24,14 +24,15 @@
 
 /*********************** CONSTANTES ************************************************/
 #define VREF 5.0  // Tension de référence des niveaux logiques sert pour le calcul du PH
-#define NOMBRE_POINTS_DE_MESURE_PH  40 // sert pour le calcul du PH
+#define NOMBRE_POINTS_DE_MESURE  10 // sert pour le calcul du PH et ORP
+#define NB_PAS_POUR_VREF 1024 // 1024 pour 5V pour les entrees analogiques 
 /***********************************************************************************/
 
 /*********************** VARIABLES GLOBALES ****************************************/
 float temperatureEauEnCelcius;
 float calibrationPH = 0;
 float calibrationORP = -690;
-int tableauMesuresPHEnVolt[NOMBRE_POINTS_DE_MESURE_PH];    // Stockage des points de mesure analogiques
+int tableauMesuresPHEnVolt[NOMBRE_POINTS_DE_MESURE];    // Stockage des points de mesure analogiques
 int indexTableauMesuresPHEnVolt = 0;
 float voltagePHMoyen;
 float PH;
@@ -73,8 +74,10 @@ void setup(void)
  * **********************************************/
 void loop(void)
 {
+  int timingCourant = millis();
+
   // Les mesures sont transmises toutes les PERIODE_ENVOI_DES_DONNEES
-  if ((millis() - timingDerniereMAJDesDonnees) > (PERIODE_ENVOI_DES_DONNEES * 1000))
+  if ((timingCourant - timingDerniereMAJDesDonnees) > (PERIODE_ENVOI_DES_DONNEES * 1000))
   {
     envoyerLesDonneesDansLeCloud(); 
     envoyerInfosSurLiaisonSerie();
@@ -83,8 +86,8 @@ void loop(void)
   }
   
   lireTemperatureEauDuBassin();
-  lireORP();
-  lirePH();
+  lireORP(BROCHE_ORP, NOMBRE_POINTS_DE_MESURE, NB_PAS_POUR_VREF, VREF, calibrationORP);
+  lirePH(BROCHE_PH, NOMBRE_POINTS_DE_MESURE, NB_PAS_POUR_VREF, VREF, calibrationPH);
   lireTemperatureEtHumiditeDuLocal();
   lireNiveauEauDansLocal();
   gererAlarmeNiveauEauDansLocal();
@@ -119,38 +122,6 @@ void lireTemperatureEtHumiditeDuLocal(void)
 
 /*************************************************
 
-              LIRE LE PH
-
- * **********************************************/
-void lirePH(void)
-{
-  // La mesure de PH ne se fait pas à tous les cycles
-  if(millis() - dateDerniereMesurePH < periodeEchantillonagePHEnMs) return;
-
-  // Lecture du PH selon la doc du capteur https://www.dfrobot.com/wiki/index.php/PH_meter_V1.1_SKU:SEN0161#Sample_Code
-  tableauMesuresPHEnVolt[indexTableauMesuresPHEnVolt++] = analogRead(BROCHE_PH);
-
-  if (indexTableauMesuresPHEnVolt == NOMBRE_POINTS_DE_MESURE_PH) indexTableauMesuresPHEnVolt = 0;
-  // récuperation d'une valeur stable en applicant l'algo de filtre median (https://fr.wikipedia.org/wiki/Filtre_m%C3%A9dian)
-  voltagePHMoyen = filtreMedian(tableauMesuresPHEnVolt, NOMBRE_POINTS_DE_MESURE_PH) * VREF / 1024; 
-
-  PH = 3.5 * voltagePHMoyen + calibrationPH;
-}
-
-/*************************************************
-
-              LIRE OXYREDUCTION
-
- * **********************************************/
-void lireORP(void)
-{
-  // Lecture de l'ORP selon la doc du capteur https://www.phidgets.com/docs/1130_User_Guide
-  int voltageORP = analogRead(BROCHE_ORP) + calibrationORP;
-  ORP = (2.5 - voltageORP) / 1.037;
-}
-
-/*************************************************
-
               LIRE NIVEAU EAU DANS LOCAL
                       Moisture sensor
  * **********************************************/
@@ -172,39 +143,6 @@ void lireNiveauEauDansLocal()
 void gererAlarmeNiveauEauDansLocal()
 {
   if(niveauEau > 500) digitalWrite(BROCHE_BUZZER, HIGH);
-}
-
-/*************************************************
-
-              FILTRE MEDIAN
-
- * **********************************************/
-int filtreMedian(int tableauDesPoints[], int nombreDePoints)
-{
-  int tableauTemporaire[nombreDePoints];
-  for (byte i = 0; i < nombreDePoints; i++)
-  {
-    tableauTemporaire[i] = tableauDesPoints[i];
-  }
-  int i, j, valeurMoyenne;
-  for (j = 0; j < nombreDePoints - 1; j++)
-  {
-    for (i = 0; i < nombreDePoints - j - 1; i++)
-    {
-      if (tableauTemporaire[i] > tableauTemporaire[i + 1])
-      {
-        valeurMoyenne = tableauTemporaire[i];
-        tableauTemporaire[i] = tableauTemporaire[i + 1];
-        tableauTemporaire[i + 1] = valeurMoyenne;
-      }
-    }
-  }
-  if ((nombreDePoints & 1) > 0)
-    valeurMoyenne = tableauTemporaire[(nombreDePoints - 1) / 2];
-  else
-    valeurMoyenne = (tableauTemporaire[nombreDePoints / 2] + tableauTemporaire[nombreDePoints / 2 - 1]) / 2;
-
-  return valeurMoyenne;
 }
 
 /*************************************************
