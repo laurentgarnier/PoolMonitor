@@ -1,4 +1,11 @@
 /**************************************************/
+/*****       GESTION ECHANGE AVEC LINUX       ****/
+#include <Bridge.h>
+#include <YunServer.h>
+#include <YunClient.h>
+
+/**************************************************/
+/**************************************************/
 /***** LECTURE TEMPERATURE ET HUMIDITE DHT11   ****/
 #include <dht11.h>
 /**************************************************/
@@ -42,6 +49,12 @@ float humiditeDuLocal;
 float niveauEau;
 /***********************************************************************************/
 
+/*********************** LIEN HTTP         ****************************************/
+// Listen on default port 5555, the webserver on the Yún
+// will forward there all the HTTP requests for us.
+BridgeServer server;
+/***********************************************************************************/
+
 /*************************************************
 
               SETUP
@@ -49,11 +62,14 @@ float niveauEau;
  * **********************************************/
 void setup(void)
 {
-
   Serial.begin(9600); // USB
+  Bridge.begin();
   ssd1306_128x32_i2c_init();
   ssd1306_fillScreen(0x00);
   ssd1306_setFixedFont(ssd1306xled_font6x8);
+
+  server.listenOnLocalhost();
+  server.begin();
 
   if (PERIODE_ENVOI_DES_DONNEES == 0)
     PERIODE_ENVOI_DES_DONNEES = 20; // par defaut 5mn
@@ -70,6 +86,11 @@ void loop(void)
 {
   int timingCourant = millis();
 
+  // Get clients coming from server
+  BridgeClient client = server.accept();
+  if (client) 
+    RepondreAuxDemandesHTTP(client);
+  
   // Les mesures sont transmises toutes les PERIODE_ENVOI_DES_DONNEES
   if ((timingCourant - timingDerniereMAJDesDonnees) > (PERIODE_ENVOI_DES_DONNEES * 1000))
   {
@@ -218,4 +239,32 @@ void envoyerInfosSurLiaisonSerie(void)
   messageDebug += "Niveau eau  : " + String(niveauEau) + "\r\n";
 
   tracerDebug(messageDebug);
+}
+
+/*************************************************
+
+              REPONSE JSON AUX DEMANDES arduino/Monitor
+
+ * **********************************************/
+void RepondreAuxDemandesHTTP(BridgeClient client)
+{
+    // read the command
+    String command = client.readString();
+    command.trim();        //kill whitespace
+    if(command == "Monitor"){
+      Process time;
+      time.runShellCommand("date");
+      String timeString = "";
+      while (time.available()) {
+        char c = time.read();
+        timeString += c;
+      }
+      String reponse = "[{\"time\":\"" + timeString + "\",\"Capteur\":\0"1\",\"ORP\":" + String(ORP);
+      reponse += ",\"PH\":" + String(PH) + ",\"TempEau\":" + String(temperatureEauEnCelcius);
+      reponse += ",\"TempLocal\":" + String(temperatureDuLocalEnCelcius)+ ",\"humidite\":" + String(humiditeDuLocal);
+      reponse += ",\"niveau\";" + String(niveauEau) + "}]"
+      
+      client.print(reponse);      
+    }
+    client.stop();
 }
