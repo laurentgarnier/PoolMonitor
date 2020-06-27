@@ -31,17 +31,11 @@
 /*********************** VARIABLES GLOBALES ****************************************/
 float temperatureEauEnCelcius;
 float calibrationPH = 0;
-float calibrationORP = -690;
-int tableauMesuresPHEnVolt[NOMBRE_POINTS_DE_MESURE];    // Stockage des points de mesure analogiques
-int indexTableauMesuresPHEnVolt = 0;
-float voltagePHMoyen;
+float calibrationORP = 0;
 float PH;
-int periodeEchantillonagePHEnMs = 20;
-unsigned long dateDerniereMesurePH = millis();
 float ORP;
 int timingDerniereMAJDesDonnees;
 int PERIODE_ENVOI_DES_DONNEES;
-int nombreCycle = 0;
 dht11 DHT;
 float temperatureDuLocalEnCelcius;
 float humiditeDuLocal;
@@ -80,16 +74,16 @@ void loop(void)
   if ((timingCourant - timingDerniereMAJDesDonnees) > (PERIODE_ENVOI_DES_DONNEES * 1000))
   {
     envoyerLesDonneesDansLeCloud(); 
+    envoyerInfosSurLiaisonSerie();
     timingDerniereMAJDesDonnees = millis();
   }
   
   lireTemperatureEauDuBassin();
-  lireORP(BROCHE_ORP, NOMBRE_POINTS_DE_MESURE, NB_PAS_POUR_VREF, VREF, calibrationORP);
-  lirePH(BROCHE_PH, NOMBRE_POINTS_DE_MESURE, NB_PAS_POUR_VREF, VREF, calibrationPH);
+  ORP = lireORP(BROCHE_ORP, NOMBRE_POINTS_DE_MESURE, NB_PAS_POUR_VREF, VREF, calibrationORP);
+  PH = lirePH(BROCHE_PH, NOMBRE_POINTS_DE_MESURE, NB_PAS_POUR_VREF, VREF, calibrationPH);
   lireTemperatureEtHumiditeDuLocal();
   lireNiveauEauDansLocal();
   gererAlarmeNiveauEauDansLocal();
-  envoyerInfosSurLiaisonSerie();
   mettreAJourInfosSurAfficheur();
 }
 
@@ -202,7 +196,7 @@ void tracerDebug(String message)
 void mettreAJourInfosSurAfficheur()
 {
    miseAJourAfficheur("Eau : " + String(temperatureEauEnCelcius) + " *C", 0, 0);
-   miseAJourAfficheur(" " + String(PH) + " | " + String(ORP), 0, 8);
+   miseAJourAfficheur("PH " + String(PH) + " | " + String(ORP), 0, 8);
    miseAJourAfficheur("Loc : " + String(temperatureDuLocalEnCelcius) + " *C", 0, 16);
    miseAJourAfficheur("Loc : " + String(humiditeDuLocal) + " %", 0, 24);
 }
