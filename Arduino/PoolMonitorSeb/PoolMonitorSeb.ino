@@ -1,6 +1,6 @@
 /**************************************************/
 /***** LECTURE TEMPERATURE ET HUMIDITE DHT11   ****/
-#include <DHT.h>
+#include <dht11.h>
 /**************************************************/
 /***** AFFICHAGE ECRAN OLED                   ****/
 #include "ssd1306.h"
@@ -42,7 +42,7 @@ float ORP;
 int timingDerniereMAJDesDonnees;
 int PERIODE_ENVOI_DES_DONNEES;
 int nombreCycle = 0;
-DHT dht(BROCHE_DHT11, DHT11);
+dht11 DHT;
 float temperatureDuLocalEnCelcius;
 float humiditeDuLocal;
 float niveauEau;
@@ -80,8 +80,6 @@ void loop(void)
   if ((timingCourant - timingDerniereMAJDesDonnees) > (PERIODE_ENVOI_DES_DONNEES * 1000))
   {
     envoyerLesDonneesDansLeCloud(); 
-    envoyerInfosSurLiaisonSerie();
-    
     timingDerniereMAJDesDonnees = millis();
   }
   
@@ -91,6 +89,7 @@ void loop(void)
   lireTemperatureEtHumiditeDuLocal();
   lireNiveauEauDansLocal();
   gererAlarmeNiveauEauDansLocal();
+  envoyerInfosSurLiaisonSerie();
   mettreAJourInfosSurAfficheur();
 }
 
@@ -116,8 +115,26 @@ void lireTemperatureEauDuBassin(void)
  * **********************************************/
 void lireTemperatureEtHumiditeDuLocal(void)
 {
-  temperatureDuLocalEnCelcius = dht.readTemperature();
-  humiditeDuLocal = dht.readHumidity();
+  int chk;
+  Serial.print("Lecture DHT11, \t");
+  chk = DHT.read(BROCHE_DHT11);    // READ DATA
+  switch (chk){
+    case DHTLIB_OK:
+                Serial.print("OK,\t");
+                break;
+    case DHTLIB_ERROR_CHECKSUM:
+                Serial.print("Checksum error,\t");
+                break;
+    case DHTLIB_ERROR_TIMEOUT:
+                Serial.print("Time out error,\t");
+                break;
+    default:
+                Serial.print("Unknown error,\t");
+                break;
+  }
+  
+  temperatureDuLocalEnCelcius = DHT.temperature;
+  humiditeDuLocal = DHT.humidity;
 }
 
 /*************************************************
