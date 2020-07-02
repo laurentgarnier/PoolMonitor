@@ -1,0 +1,44 @@
+<!DOCTYPE HTML>
+
+<head>
+    <title>Calibration</title>
+    <script src="Scripts/jquery.min.js"></script>
+</head>
+
+<body>
+
+    <form name="msgform" onSubmit="return sendMsg()">
+        PH : <input type="text" name="PH"> -
+        ORP : <input type="text" name="ORP">
+        <input type="submit" value="Calibrer">
+    </form>
+    <h6><a href="../Dashboard">Dashboard</a></h6>
+    <script type="text/javascript">
+
+        function sendMsg() {
+            if (document.msgform.PH.value.length > 0) {
+                $.ajax({
+                    type: "GET",
+                    contentType: "application/json",
+                    url: "../arduino/SetPH/" + document.msgform.PH.value,
+                    success: function (json) {
+
+                    }
+                });
+            }
+
+            if (document.msgform.ORP.value.length > 0) {
+                $.ajax({
+                    type: "GET",
+                    contentType: "application/json",
+                    url: "../arduino/SetORP/" + document.msgform.ORP.value,
+                    success: function (json) {
+
+                    }
+                });
+            }
+                return false;
+        }
+    </script>
+    
+</body>

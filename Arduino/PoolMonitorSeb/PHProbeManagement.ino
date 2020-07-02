@@ -52,5 +52,5 @@ float lirePH(int brocheDeLaSonde, int nombreDePointsDeMesure, int nbPasPourVRef,
 	//Serial.println("PH mv : " + String(PhmV)+ " PH : " + String(ph));
 	free(analogValuesPH);
   
-	return ph * calibrationPH;
+	return ph + calibration;
 }

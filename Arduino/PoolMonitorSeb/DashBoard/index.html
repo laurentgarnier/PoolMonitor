@@ -16,7 +16,11 @@
 
   <script>
     window.onload = function () {
-      // Récupération des données
+      setInterval(refresh, 300000); // toutes les 5mn (60*5*1000 ms)
+      refresh();
+    }
+
+    function refresh() {
       $.ajax({
         type: "GET",
         contentType: "application/json",
@@ -35,7 +39,6 @@
       });
       var date = new Date(Date.now());
       $("#libelleDate").text(date.toLocaleString());
-
     }
   </script>
 
@@ -164,6 +167,7 @@
       </td>
     </tr>
   </table>
+  <h6><a href="../Calibration">Calibration</a></h6>
 </body>
 
 </html>

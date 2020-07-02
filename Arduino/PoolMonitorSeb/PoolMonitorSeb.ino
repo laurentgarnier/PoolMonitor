@@ -37,7 +37,7 @@
 
 /*********************** VARIABLES GLOBALES ****************************************/
 float temperatureEauEnCelcius;
-float calibrationPH = 1;
+float calibrationPH = 0;
 float calibrationORP = 0;
 float PH;
 float ORP;
@@ -142,7 +142,7 @@ void lireTemperatureEtHumiditeDuLocal(void)
                 Serial.print("Checksum error,\t");
                 break;
     case DHTLIB_ERROR_TIMEOUT:
-                Serial.print("Time out error,\t");
+                //Serial.print("Time out error,\t");
                 break;
     default:
                 Serial.print("Unknown error,\t");
@@ -251,18 +251,13 @@ void RepondreAuxDemandesHTTP(YunClient client)
 {
     tracerDebug("Requete HTTP");
     // read the command
-    String command = client.readString();
+    //String command = client.readString();
+    String command = client.readStringUntil('/');  //read the incoming data 
     command.trim();        //kill whitespace
     tracerDebug(command);
+        
     if(command == "Monitor"){
-      Process time;
-      time.runShellCommand("date");
-      String timeString = "";
-      while (time.available()) {
-        char c = time.read();
-        timeString += c;
-      }
-      String reponse = "{\"Capteur\":\"1\",\"ORP\":\"" + String(ORP);
+          String reponse = "{\"Capteur\":\"1\",\"ORP\":\"" + String(ORP);
       reponse += "\",\"PH\":\"" + String(PH) + "\",\"TempEau\":\"" + String(temperatureEauEnCelcius);
       reponse += "\",\"TempLocal\":\"" + String(temperatureDuLocalEnCelcius)+ "\",\"humidite\":\"" + String(humiditeDuLocal);
       reponse += "\",\"niveau\":\"" + String(niveauEau) + "\"}";
@@ -271,6 +266,24 @@ void RepondreAuxDemandesHTTP(YunClient client)
       client.println("Content-type: application/json; charset=UTF-8");
       client.println();
       client.println(reponse);      
+    }
+
+    if(command == "SetPH"){
+       calibrationPH = client.readStringUntil('/').toFloat();  // read the incoming data
+       client.println("Status: 200");
+       client.println("Content-type: application/json; charset=UTF-8");
+       client.println();
+       client.println("Valeur de calibration PH : " + String(calibrationPH));
+       tracerDebug(String(calibrationPH));
+    }
+
+     if(command == "SetORP"){
+       calibrationORP = client.readStringUntil('/').toFloat();  // read the incoming data
+       client.println("Status: 200");
+       client.println("Content-type: application/json; charset=UTF-8");
+       client.println();
+       client.println("Valeur de calibration ORP : " + String(calibrationORP));
+       tracerDebug(String(calibrationORP));
     }
     client.stop();
 }
