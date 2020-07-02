@@ -32,12 +32,12 @@
 /*********************** CONSTANTES ************************************************/
 #define VREF 5.0  // Tension de référence des niveaux logiques sert pour le calcul du PH
 #define NOMBRE_POINTS_DE_MESURE  10 // sert pour le calcul du PH et ORP
-#define NB_PAS_POUR_VREF 1024 // 1024 pour 5V pour les entrees analogiques 
+#define NB_PAS_POUR_VREF 1024 // 1024 pour 5V pour les entrees analogiques pour Yun
 /***********************************************************************************/
 
 /*********************** VARIABLES GLOBALES ****************************************/
 float temperatureEauEnCelcius;
-float calibrationPH = 0;
+float calibrationPH = 1;
 float calibrationORP = 0;
 float PH;
 float ORP;
@@ -52,7 +52,7 @@ float niveauEau;
 /*********************** LIEN HTTP         ****************************************/
 // Listen on default port 5555, the webserver on the Yún
 // will forward there all the HTTP requests for us.
-BridgeServer server;
+YunServer server;
 /***********************************************************************************/
 
 /*************************************************
@@ -85,9 +85,9 @@ void setup(void)
 void loop(void)
 {
   int timingCourant = millis();
-
+  
   // Get clients coming from server
-  BridgeClient client = server.accept();
+  YunClient client = server.accept();
   if (client) 
     RepondreAuxDemandesHTTP(client);
   
@@ -106,6 +106,7 @@ void loop(void)
   lireNiveauEauDansLocal();
   gererAlarmeNiveauEauDansLocal();
   mettreAJourInfosSurAfficheur();
+  
 }
 
 /*************************************************
@@ -131,11 +132,11 @@ void lireTemperatureEauDuBassin(void)
 void lireTemperatureEtHumiditeDuLocal(void)
 {
   int chk;
-  Serial.print("Lecture DHT11, \t");
+ // Serial.print("Lecture DHT11, \t");
   chk = DHT.read(BROCHE_DHT11);    // READ DATA
   switch (chk){
     case DHTLIB_OK:
-                Serial.print("OK,\t");
+               // Serial.print("OK,\t");
                 break;
     case DHTLIB_ERROR_CHECKSUM:
                 Serial.print("Checksum error,\t");
@@ -246,9 +247,9 @@ void envoyerInfosSurLiaisonSerie(void)
               REPONSE JSON AUX DEMANDES arduino/Monitor
 
  * **********************************************/
-void RepondreAuxDemandesHTTP(BridgeClient client)
+void RepondreAuxDemandesHTTP(YunClient client)
 {
-    tracerDebug("Requete HTTP";
+    tracerDebug("Requete HTTP");
     // read the command
     String command = client.readString();
     command.trim();        //kill whitespace
@@ -261,12 +262,15 @@ void RepondreAuxDemandesHTTP(BridgeClient client)
         char c = time.read();
         timeString += c;
       }
-      String reponse = "[{\"time\":\"" + timeString + "\",\"Capteur\":\"1\",\"ORP\":" + String(ORP);
-      reponse += "\",\"PH\":" + String(PH) + ",\"TempEau\":" + String(temperatureEauEnCelcius);
-      reponse += "\",\"TempLocal\":" + String(temperatureDuLocalEnCelcius)+ ",\"humidite\":" + String(humiditeDuLocal);
-      reponse += "\",\"niveau\";" + String(niveauEau) + "}]";
-      
-      client.print(reponse);      
+      String reponse = "{\"Capteur\":\"1\",\"ORP\":\"" + String(ORP);
+      reponse += "\",\"PH\":\"" + String(PH) + "\",\"TempEau\":\"" + String(temperatureEauEnCelcius);
+      reponse += "\",\"TempLocal\":\"" + String(temperatureDuLocalEnCelcius)+ "\",\"humidite\":\"" + String(humiditeDuLocal);
+      reponse += "\",\"niveau\":\"" + String(niveauEau) + "\"}";
+
+      client.println("Status: 200");
+      client.println("Content-type: application/json; charset=UTF-8");
+      client.println();
+      client.println(reponse);      
     }
     client.stop();
 }

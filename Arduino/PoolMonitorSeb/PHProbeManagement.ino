@@ -18,7 +18,6 @@ float lirePH(int brocheDeLaSonde, int nombreDePointsDeMesure, int nbPasPourVRef,
 	for(int indexBuffer = 0; indexBuffer < nombreDePointsDeMesure; indexBuffer++)
 	{
 		analogValuesPH[indexBuffer] = analogRead(brocheDeLaSonde);
-    //Serial.println("valeur analogique : " + String(analogValuesPH[indexBuffer]));
 		delay(10);
 	}
 	
@@ -50,7 +49,7 @@ float lirePH(int brocheDeLaSonde, int nombreDePointsDeMesure, int nbPasPourVRef,
 	
 	float PhmV = (float)somme * vRef / nbPasPourVRef / (nombreDePointsDeMesure-4); //convert the analog into millivolt
 	float ph = 3.5 * PhmV;     
-	
+	//Serial.println("PH mv : " + String(PhmV)+ " PH : " + String(ph));
 	free(analogValuesPH);
   
 	return ph * calibrationPH;

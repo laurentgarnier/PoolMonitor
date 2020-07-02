@@ -1,5 +1,6 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
+
 <head>
   <!-- refresh tous les 1/4h -->
   <meta http-equiv="refresh" content="900">
@@ -9,147 +10,160 @@
   <link rel="stylesheet" href="Content/w3.css">
   <script src="Scripts/gauge.min.js"></script>
   <script src="Scripts/moment.min.js"></script>
-  <script src="Scripts/Chart.min.js"></script> 
+  <script src="Scripts/Chart.min.js"></script>
   <script src="Scripts/Chart.utils.js"></script>
   <script src="Scripts/jquery.min.js"></script>
-  
+
   <script>
-      window.onload = function(){
-        // Récupération des données
-        $.ajax({
-          type : "GET",
-          url : "../arduino/Monitor",
-          success : function(json) { 
-            var data = json.data[0].data;
-            $("#gaugeTemperatureBassin").attr("data-value", data.TempEau);
-            $("#gaugePH").attr("data-value", data.PH);
-            $("#gaugeORP").attr("data-value", data.ORP);
-            $("#gaugeTemperatureLocal").attr("data-value", data.TempLocal);
-            $("#gaugeHumidite").attr("data-value", data.humidite);
-            $("#gaugeNiveau").attr("data-value", data.niveau);
-            var date = new Date(json.data[0].ts);
-            $("#libelleDate").text(date.toLocaleString());
-          },
-          error : function(xhr) {alert("Erreur " + xhr.statusText);}
-        });
-      }
-    </script>
+    window.onload = function () {
+      // Récupération des données
+      $.ajax({
+        type: "GET",
+        contentType: "application/json",
+        url: "../arduino/Monitor",
+        success: function (json) {
+          var data = json;
+
+          $("#gaugeTemperatureBassin").attr("data-value", data.TempEau);
+          $("#gaugePH").attr("data-value", data.PH);
+          $("#gaugeORP").attr("data-value", data.ORP);
+          $("#gaugeTemperatureLocal").attr("data-value", data.TempLocal);
+          $("#gaugeHumidite").attr("data-value", data.humidite);
+          $("#gaugeNiveau").attr("data-value", data.niveau);
+        },
+        error: function (xhr) { alert("Erreur " + xhr.statusText); }
+      });
+      var date = new Date(Date.now());
+      $("#libelleDate").text(date.toLocaleString());
+
+    }
+  </script>
 
 </head>
+
 <body>
   <table>
-    <tr >
+    <tr>
       <td colspan="2">
-          <div id="libelleDate" class="w3-container w3-margin-top w3-margin-left w3-center" style="font-size: x-small;width: 250px">Date</div>
+        <div id="libelleDate" class="w3-container w3-margin-top w3-margin-left w3-center"
+          style="font-size: x-small;width: 250px">Date</div>
       </td>
+      <td></td>
     </tr>
     <tr>
       <td>
-      
-  
-      <div class="w3-card-4 w3-margin-top w3-margin-left" style="width: 250px">
-        <header class="w3-container w3-center w3-light-gray">
-          <h5>Bassin</h5>
-        </header>
-        <div class="w3-container w3-center"> 
-          <canvas id="gaugeTemperatureBassin" data-type="radial-gauge" data-width="200" data-height="200" data-units="°C" data-title="T°" 
-          data-value="0.01" data-animate-on-init="true" data-animated-value="true" data-min-value="0" data-max-value="40"
-          data-major-ticks="0,5,10,15,20,25,30,35,40" data-minor-ticks="5" data-stroke-ticks="false" 
-          data-highlights='[
+
+
+        <div class="w3-card-4 w3-margin-top w3-margin-left" style="width: 250px">
+          <header class="w3-container w3-center w3-light-gray">
+            <h5>Bassin</h5>
+          </header>
+          <div class="w3-container w3-center">
+            <canvas id="gaugeTemperatureBassin" data-type="radial-gauge" data-width="200" data-height="200"
+              data-units="°C" data-title="T°" data-value="0.0" data-animated-value="true"
+              data-min-value="0" data-max-value="40" data-major-ticks="0,5,10,15,20,25,30,35,40" data-minor-ticks="5"
+              data-stroke-ticks="false" data-highlights='[
                             { "from": 0, "to": 22, "color": "rgba(0,204,255,.5)" },
                             { "from": 22, "to": 33, "color": "rgba(0,255,0,.5)" },
                             { "from": 33, "to": 40, "color": "rgba(0,102,0,1)" }
-                          ]' 
-            data-color-plate="#222" data-color-major-ticks="#f5f5f5" data-color-minor-ticks="#ddd" data-color-title="#fff" data-color-units="#ccc" 
-            data-color-numbers="#eee" data-color-needle-start="rgba(240, 128, 128, 1)" data-color-needle-end="rgba(255, 160, 122, .9)" data-value-box="true" 
-            data-animation-rule="bounce" data-animation-duration="500" data-font-value="Led" data-font-numbers="Led">
-          </canvas>
-        </div>
- 
-          <div class="w3-container w3-center"> 
-          <canvas id="gaugePH" data-type="radial-gauge" data-width="200" data-height="200" data-title="PH" 
-          data-value="0.0" data-animate-on-init="true" data-animated-value="true" data-min-value="6.5" data-max-value="8"
-          data-major-ticks="6.5,7,7.5,8" data-minor-ticks="5" data-stroke-ticks="false" 
-          data-highlights='[
-                            { "from": 6.5, "to": 7.2, "color": "rgba(255,0,0,1)" },
-                            { "from": 7.2, "to": 7.6, "color": "rgba(0,255,0,.5)" },
-                            { "from": 7.6, "to": 8, "color": "rgba(255,0,0,1)" }
-                          ]' 
-            data-color-plate="#222" data-color-major-ticks="#f5f5f5" data-color-minor-ticks="#ddd" data-color-title="#fff" data-color-units="#ccc" 
-            data-color-numbers="#eee" data-color-needle-start="rgba(240, 128, 128, 1)" data-color-needle-end="rgba(255, 160, 122, .9)" data-value-box="true" 
-            data-animation-rule="bounce" data-animation-duration="500" data-font-value="Led" data-font-numbers="Led">
-        </canvas>
+                          ]' data-color-plate="#222" data-color-major-ticks="#f5f5f5" data-color-minor-ticks="#ddd"
+              data-color-title="#fff" data-color-units="#ccc" data-color-numbers="#eee"
+              data-color-needle-start="rgba(240, 128, 128, 1)" data-color-needle-end="rgba(255, 160, 122, .9)"
+              data-value-box="true" data-animation-rule="bounce" data-animation-duration="500" data-font-value="Led"
+              data-font-numbers="Led">
+            </canvas>
           </div>
-     
-          <div class="w3-container w3-center ">        
-          <canvas id="gaugeORP" data-type="radial-gauge" data-width="200" data-height="200" data-title="ORP" data-units="mV" 
-            data-value="0" data-animate-on-init="true" data-animated-value="true" data-min-value="600" data-max-value="800"
-            data-major-ticks="600,650,700,750,800" data-minor-ticks="10" data-stroke-ticks="false" 
-            data-highlights='[
+
+         <div class="w3-container w3-center">
+            <canvas id="gaugePH" data-type="radial-gauge" data-width="200" data-height="200" data-title="PH"
+              data-value="0.0"  data-animated-value="true" data-min-value="6.5"
+              data-max-value="8" data-major-ticks="6.5,7,7.5,8" data-minor-ticks="5" data-stroke-ticks="false"
+              data-highlights='[
+                                      { "from": 6.5, "to": 7.2, "color": "rgba(255,0,0,1)" },
+                                      { "from": 7.2, "to": 7.6, "color": "rgba(0,255,0,.5)" },
+                                      { "from": 7.6, "to": 8, "color": "rgba(255,0,0,1)" }
+                                    ]' data-color-plate="#222" data-color-major-ticks="#f5f5f5"
+              data-color-minor-ticks="#ddd" data-color-title="#fff" data-color-units="#ccc" data-color-numbers="#eee"
+              data-color-needle-start="rgba(240, 128, 128, 1)" data-color-needle-end="rgba(255, 160, 122, .9)"
+              data-value-box="true" data-animation-rule="bounce" data-animation-duration="500" data-font-value="Led"
+              data-font-numbers="Led">
+            </canvas>
+          </div>
+
+          <div class="w3-container w3-center ">
+            <canvas id="gaugeORP" data-type="radial-gauge" data-width="200" data-height="200" data-title="ORP"
+              data-units="mV" data-value="0"  data-animated-value="true" data-min-value="600"
+              data-max-value="900" data-major-ticks="600,650,700,750,800,850,900" data-minor-ticks="10"
+              data-stroke-ticks="false" data-highlights='[
                               { "from": 600, "to": 650, "color": "rgba(255,0,0,1)" },
-                              { "from": 650, "to": 750, "color": "rgba(0,255,0,.5)" },
-                              { "from": 750, "to": 800, "color": "rgba(255,0,0,1)" }
-                            ]' 
-              data-color-plate="#222" data-color-major-ticks="#f5f5f5" data-color-minor-ticks="#ddd" data-color-title="#fff" data-color-units="#ccc" 
-              data-color-numbers="#eee" data-color-needle-start="rgba(240, 128, 128, 1)" data-color-needle-end="rgba(255, 160, 122, .9)" data-value-box="true" 
-              data-animation-rule="bounce" data-animation-duration="500" data-font-value="Led" data-font-numbers="Led">
-          </canvas>
+                              { "from": 650, "to": 850, "color": "rgba(0,255,0,.5)" },
+                              { "from": 850, "to": 900, "color": "rgba(255,0,0,1)" }
+                            ]' data-color-plate="#222" data-color-major-ticks="#f5f5f5" data-color-minor-ticks="#ddd"
+              data-color-title="#fff" data-color-units="#ccc" data-color-numbers="#eee"
+              data-color-needle-start="rgba(240, 128, 128, 1)" data-color-needle-end="rgba(255, 160, 122, .9)"
+              data-value-box="true" data-animation-rule="bounce" data-animation-duration="500" data-font-value="Led"
+              data-font-numbers="Led">
+            </canvas>
+          </div>
         </div>
-      </div>
       </td>
       <td>
-      <div class="w3-card-4 w3-margin-top w3-margin-left" style="width: 250px">
-        <header class="w3-container w3-center w3-light-gray">
-          <h5>Local</h5>
-        </header>
-        <div class="w3-container w3-center"> 
-          <canvas id="gaugeTemperatureLocal" data-type="radial-gauge" data-width="200" data-height="200" data-units="°C" data-title="T°"
-          data-value="0.01" data-animate-on-init="true" data-animated-value="true" data-min-value="-5" data-max-value="40" 
-          data-major-ticks="-5,0,5,10,15,20,25,30,35,40" data-minor-ticks="5" data-stroke-ticks="false" 
-          data-highlights='[
+        <div class="w3-card-4 w3-margin-top w3-margin-left" style="width: 250px">
+          <header class="w3-container w3-center w3-light-gray">
+            <h5>Local</h5>
+          </header>
+          <div class="w3-container w3-center">
+            <canvas id="gaugeTemperatureLocal" data-type="radial-gauge" data-width="200" data-height="200"
+              data-units="°C" data-title="T°" data-value="0.0"  data-animated-value="true"
+              data-min-value="-5" data-max-value="40" data-major-ticks="-5,0,5,10,15,20,25,30,35,40"
+              data-minor-ticks="5" data-stroke-ticks="false" data-highlights='[
                             { "from": -5.0, "to": 0.0, "color": "rgba(0,204,255,1)" },
                             { "from": 0.0, "to": 10, "color": "rgba(0,204,255,.5)" },
                             { "from": 10, "to": 33, "color": "rgba(0,255,0,.5)" },
                             { "from": 33, "to": 40, "color": "rgba(0,102,0,1)" }
-                          ]' 
-            data-color-plate="#222" data-color-major-ticks="#f5f5f5" data-color-minor-ticks="#ddd" data-color-title="#fff" data-color-units="#ccc" 
-            data-color-numbers="#eee" data-color-needle-start="rgba(240, 128, 128, 1)" data-color-needle-end="rgba(255, 160, 122, .9)" data-value-box="true" 
-            data-animation-rule="bounce" data-animation-duration="500" data-font-value="Led" data-font-numbers="Led">
-          </canvas>
-        </div>
- 
-          <div class="w3-container w3-center"> 
-          <canvas id="gaugeHumidite" data-type="radial-gauge" data-width="200" data-height="200" data-title="Humidite" data-units="%" 
-          data-value="0.0" data-animate-on-init="true" data-animated-value="true" data-min-value="0.0" data-max-value="100.0"
-          data-major-ticks="0,10,20,30,40,50,60,70,80,90,100" data-minor-ticks="5" data-stroke-ticks="false" 
-          data-highlights='[
+                          ]' data-color-plate="#222" data-color-major-ticks="#f5f5f5" data-color-minor-ticks="#ddd"
+              data-color-title="#fff" data-color-units="#ccc" data-color-numbers="#eee"
+              data-color-needle-start="rgba(240, 128, 128, 1)" data-color-needle-end="rgba(255, 160, 122, .9)"
+              data-value-box="true" data-animation-rule="bounce" data-animation-duration="500" data-font-value="Led"
+              data-font-numbers="Led">
+            </canvas>
+          </div>
+
+          <div class="w3-container w3-center">
+            <canvas id="gaugeHumidite" data-type="radial-gauge" data-width="200" data-height="200" data-title="Humidite"
+              data-units="%" data-value="0.0"  data-animated-value="true"
+              data-min-value="0.0" data-max-value="100.0" data-major-ticks="0,10,20,30,40,50,60,70,80,90,100"
+              data-minor-ticks="5" data-stroke-ticks="false" data-highlights='[
                             { "from": 0, "to": 40, "color": "rgba(243,139,35,1)" },
                             { "from": 40, "to": 60, "color": "rgba(0,255,0,.5)" },
                             { "from": 60, "to": 100, "color": "rgba(243,139,35,1)" }
-                          ]' 
-            data-color-plate="#222" data-color-major-ticks="#f5f5f5" data-color-minor-ticks="#ddd" data-color-title="#fff" data-color-units="#ccc" 
-            data-color-numbers="#eee" data-color-needle-start="rgba(240, 128, 128, 1)" data-color-needle-end="rgba(255, 160, 122, .9)" data-value-box="true" 
-            data-animation-rule="bounce" data-animation-duration="500" data-font-value="Led" data-font-numbers="Led">
-        </canvas>
+                          ]' data-color-plate="#222" data-color-major-ticks="#f5f5f5" data-color-minor-ticks="#ddd"
+              data-color-title="#fff" data-color-units="#ccc" data-color-numbers="#eee"
+              data-color-needle-start="rgba(240, 128, 128, 1)" data-color-needle-end="rgba(255, 160, 122, .9)"
+              data-value-box="true" data-animation-rule="bounce" data-animation-duration="500" data-font-value="Led"
+              data-font-numbers="Led">
+            </canvas>
           </div>
-     
-          <div class="w3-container w3-center ">        
-          <canvas id="gaugeNiveau" data-type="radial-gauge" data-width="200" data-height="200" data-title="Niveau" 
-            data-value="0" data-animate-on-init="true" data-animated-value="true" data-min-value="0" data-max-value="950"
-            data-major-ticks="0,300,700,950" data-minor-ticks="10" data-stroke-ticks="false" 
-            data-highlights='[
+
+          <div class="w3-container w3-center ">
+            <canvas id="gaugeNiveau" data-type="radial-gauge" data-width="200" data-height="200" data-title="Niveau"
+              data-value="0"  data-animated-value="true" data-min-value="0"
+              data-max-value="950" data-major-ticks="0,300,700,950" data-minor-ticks="10" data-stroke-ticks="false"
+              data-highlights='[
                               { "from": 0, "to": 300.0, "color": "rgba(0,102,0,1)" },
                               { "from": 300.0, "to": 700.0, "color": "rgba(243,139,35,1)" },
                               { "from": 700.0, "to": 950.0, "color": "rgba(255,0,0,1)" }
-                            ]' 
-              data-color-plate="#222" data-color-major-ticks="#f5f5f5" data-color-minor-ticks="#ddd" data-color-title="#fff" data-color-units="#ccc" 
-              data-color-numbers="#eee" data-color-needle-start="rgba(240, 128, 128, 1)" data-color-needle-end="rgba(255, 160, 122, .9)" data-value-box="true" 
-              data-animation-rule="bounce" data-animation-duration="500" data-font-value="Led" data-font-numbers="Led">
-          </canvas>
+                            ]' data-color-plate="#222" data-color-major-ticks="#f5f5f5" data-color-minor-ticks="#ddd"
+              data-color-title="#fff" data-color-units="#ccc" data-color-numbers="#eee"
+              data-color-needle-start="rgba(240, 128, 128, 1)" data-color-needle-end="rgba(255, 160, 122, .9)"
+              data-value-box="true" data-animation-rule="bounce" data-animation-duration="500" data-font-value="Led"
+              data-font-numbers="Led">
+            </canvas>
+          </div>
         </div>
-      </div>
       </td>
     </tr>
   </table>
-  </body>
-</html> 
+</body>
+
+</html>
