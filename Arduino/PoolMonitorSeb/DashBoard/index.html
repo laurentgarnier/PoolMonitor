@@ -18,7 +18,7 @@
         // Récupération des données
         $.ajax({
           type : "GET",
-          url : "arduino/Monitor",
+          url : "../arduino/Monitor",
           success : function(json) { 
             var data = json.data[0].data;
             $("#gaugeTemperatureBassin").attr("data-value", data.TempEau);

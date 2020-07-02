@@ -248,9 +248,11 @@ void envoyerInfosSurLiaisonSerie(void)
  * **********************************************/
 void RepondreAuxDemandesHTTP(BridgeClient client)
 {
+    tracerDebug("Requete HTTP";
     // read the command
     String command = client.readString();
     command.trim();        //kill whitespace
+    tracerDebug(command);
     if(command == "Monitor"){
       Process time;
       time.runShellCommand("date");
@@ -259,10 +261,10 @@ void RepondreAuxDemandesHTTP(BridgeClient client)
         char c = time.read();
         timeString += c;
       }
-      String reponse = "[{\"time\":\"" + timeString + "\",\"Capteur\":\0"1\",\"ORP\":" + String(ORP);
-      reponse += ",\"PH\":" + String(PH) + ",\"TempEau\":" + String(temperatureEauEnCelcius);
-      reponse += ",\"TempLocal\":" + String(temperatureDuLocalEnCelcius)+ ",\"humidite\":" + String(humiditeDuLocal);
-      reponse += ",\"niveau\";" + String(niveauEau) + "}]"
+      String reponse = "[{\"time\":\"" + timeString + "\",\"Capteur\":\"1\",\"ORP\":" + String(ORP);
+      reponse += "\",\"PH\":" + String(PH) + ",\"TempEau\":" + String(temperatureEauEnCelcius);
+      reponse += "\",\"TempLocal\":" + String(temperatureDuLocalEnCelcius)+ ",\"humidite\":" + String(humiditeDuLocal);
+      reponse += "\",\"niveau\";" + String(niveauEau) + "}]";
       
       client.print(reponse);      
     }
