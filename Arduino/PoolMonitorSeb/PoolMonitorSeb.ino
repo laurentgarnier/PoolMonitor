@@ -7,13 +7,17 @@
 /**************************************************/
 /**************************************************/
 /***** LECTURE TEMPERATURE ET HUMIDITE DHT11   ****/
-#include <dht11.h>
+// https://github.com/adafruit/DHT-sensor-library
+#include <DHT.h>
 /**************************************************/
 /***** AFFICHAGE ECRAN OLED                   ****/
+// https://github.com/lexus2k/ssd1306
 #include "ssd1306.h"
 /****************************************/
 /***** LECTURE TEMPERATURE DS18B20   ****/
+// https://www.pjrc.com/teensy/td_libs_OneWire.html
 #include <OneWire.h>
+// https://github.com/milesburton/Arduino-Temperature-Control-Library
 #include <DallasTemperature.h>
 /****************************************/
 
@@ -29,6 +33,8 @@
 
 /************************************************************************************/
 
+#define DHT_TYPE DHT11
+
 /*********************** CONSTANTES ************************************************/
 #define VREF 5.0  // Tension de référence des niveaux logiques sert pour le calcul du PH
 #define NOMBRE_POINTS_DE_MESURE  10 // sert pour le calcul du PH et ORP
@@ -43,7 +49,8 @@ float PH;
 float ORP;
 int timingDerniereMAJDesDonnees;
 int PERIODE_ENVOI_DES_DONNEES;
-dht11 DHT;
+DHT dht11(BROCHE_DHT11, DHT_TYPE);
+
 float temperatureDuLocalEnCelcius;
 float humiditeDuLocal;
 float niveauEau;
@@ -67,7 +74,8 @@ void setup(void)
   ssd1306_128x32_i2c_init();
   ssd1306_fillScreen(0x00);
   ssd1306_setFixedFont(ssd1306xled_font6x8);
-
+  dht11.begin();
+  
   server.listenOnLocalhost();
   server.begin();
 
@@ -131,26 +139,15 @@ void lireTemperatureEauDuBassin(void)
  * **********************************************/
 void lireTemperatureEtHumiditeDuLocal(void)
 {
-  int chk;
- // Serial.print("Lecture DHT11, \t");
-  chk = DHT.read(BROCHE_DHT11);    // READ DATA
-  switch (chk){
-    case DHTLIB_OK:
-               // Serial.print("OK,\t");
-                break;
-    case DHTLIB_ERROR_CHECKSUM:
-                Serial.print("Checksum error,\t");
-                break;
-    case DHTLIB_ERROR_TIMEOUT:
-                //Serial.print("Time out error,\t");
-                break;
-    default:
-                Serial.print("Unknown error,\t");
-                break;
+  temperatureDuLocalEnCelcius = dht11.readTemperature();
+  humiditeDuLocal = dht11.readHumidity();
+
+  if (isnan(humiditeDuLocal) || isnan(temperatureDuLocalEnCelcius))
+  {
+    Serial.println("Failed to read from DHT sensor!");
+    temperatureDuLocalEnCelcius = 0.0;
+    humiditeDuLocal = 0.0;
   }
-  
-  temperatureDuLocalEnCelcius = DHT.temperature;
-  humiditeDuLocal = DHT.humidity;
 }
 
 /*************************************************
