@@ -1,8 +1,8 @@
 /**************************************************/
 /*****       GESTION ECHANGE AVEC LINUX       ****/
 #include <Bridge.h>
-#include <YunServer.h>
-#include <YunClient.h>
+#include <BridgeServer.h>
+#include <BridgeClient.h>
 
 /**************************************************/
 /**************************************************/
@@ -47,8 +47,7 @@ float calibrationPH = 0;
 float calibrationORP = 0;
 float PH;
 float ORP;
-int timingDerniereMAJDesDonnees;
-int PERIODE_ENVOI_DES_DONNEES;
+
 DHT dht11(BROCHE_DHT11, DHT_TYPE);
 
 float temperatureDuLocalEnCelcius;
@@ -59,7 +58,7 @@ float niveauEau;
 /*********************** LIEN HTTP         ****************************************/
 // Listen on default port 5555, the webserver on the Yún
 // will forward there all the HTTP requests for us.
-YunServer server;
+BridgeServer server;
 /***********************************************************************************/
 
 /*************************************************
@@ -71,18 +70,14 @@ void setup(void)
 {
   Serial.begin(9600); // USB
   Bridge.begin();
-  ssd1306_128x32_i2c_init();
-  ssd1306_fillScreen(0x00);
-  ssd1306_setFixedFont(ssd1306xled_font6x8);
+  delay(1000);
+//  ssd1306_128x32_i2c_init();
+//  ssd1306_fillScreen(0x00);
+//  ssd1306_setFixedFont(ssd1306xled_font6x8);
   dht11.begin();
   
   server.listenOnLocalhost();
   server.begin();
-
-  if (PERIODE_ENVOI_DES_DONNEES == 0)
-    PERIODE_ENVOI_DES_DONNEES = 20; // par defaut 5mn
-
-  timingDerniereMAJDesDonnees = millis();
 }
 
 /*************************************************
@@ -95,25 +90,20 @@ void loop(void)
   int timingCourant = millis();
   
   // Get clients coming from server
-  YunClient client = server.accept();
+  BridgeClient client = server.accept();
   if (client) 
-    RepondreAuxDemandesHTTP(client);
-  
-  // Les mesures sont transmises toutes les PERIODE_ENVOI_DES_DONNEES
-  if ((timingCourant - timingDerniereMAJDesDonnees) > (PERIODE_ENVOI_DES_DONNEES * 1000))
   {
-    envoyerLesDonneesDansLeCloud(); 
-    envoyerInfosSurLiaisonSerie();
-    timingDerniereMAJDesDonnees = millis();
+    RepondreAuxDemandesHTTP(client);
+    client.stop();
   }
-  
+
   lireTemperatureEauDuBassin();
   ORP = lireORP(BROCHE_ORP, NOMBRE_POINTS_DE_MESURE, NB_PAS_POUR_VREF, VREF, calibrationORP);
   PH = lirePH(BROCHE_PH, NOMBRE_POINTS_DE_MESURE, NB_PAS_POUR_VREF, VREF, calibrationPH);
   lireTemperatureEtHumiditeDuLocal();
   lireNiveauEauDansLocal();
   gererAlarmeNiveauEauDansLocal();
-  mettreAJourInfosSurAfficheur();
+  //mettreAJourInfosSurAfficheur();
   
 }
 
@@ -244,7 +234,7 @@ void envoyerInfosSurLiaisonSerie(void)
               REPONSE JSON AUX DEMANDES arduino/Monitor
 
  * **********************************************/
-void RepondreAuxDemandesHTTP(YunClient client)
+void RepondreAuxDemandesHTTP(BridgeClient client)
 {
     tracerDebug("Requete HTTP");
     // read the command
@@ -282,5 +272,4 @@ void RepondreAuxDemandesHTTP(YunClient client)
        client.println("Valeur de calibration ORP : " + String(calibrationORP));
        tracerDebug(String(calibrationORP));
     }
-    client.stop();
-}
+ }
